@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: dotnanny-backend
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/dotnanny}
+      auto-index-creation: true
+
+server:
+  port: ${PORT:8080}
+
+# Origins allowed to call /api/** (the dot nanny frontend dev/preview servers).
+dotnanny:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173,http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
