@@ -4,6 +4,7 @@ import com.dotnanny.common.Role;
 import com.dotnanny.dto.RegisterRequest;
 import com.dotnanny.model.User;
 import com.dotnanny.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -14,9 +15,11 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository repo;
+    private final PasswordEncoder encoder;
 
-    public UserService(UserRepository repo) {
+    public UserService(UserRepository repo, PasswordEncoder encoder) {
         this.repo = repo;
+        this.encoder = encoder;
     }
 
     public User register(RegisterRequest r) {
@@ -26,7 +29,7 @@ public class UserService {
         User user = User.builder()
                 .fullName(r.fullName())
                 .email(r.email().toLowerCase())
-                .password(r.password()) // demo only — hash in production
+                .password(encoder.encode(r.password()))
                 .role(r.role() == null ? Role.GUARDIAN : r.role())
                 .phoneNumber(r.phoneNumber())
                 .createdAt(Instant.now())
@@ -35,7 +38,8 @@ public class UserService {
     }
 
     public Optional<User> login(String email, String password) {
-        return repo.findByEmailIgnoreCase(email).filter(u -> u.getPassword().equals(password));
+        return repo.findByEmailIgnoreCase(email)
+                .filter(u -> u.getPassword() != null && encoder.matches(password, u.getPassword()));
     }
 
     public List<User> all() {

@@ -13,6 +13,10 @@ server:
 dotnanny:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173,http://localhost:3000}
+  jwt:
+    # MUST be overridden in production (>= 32 chars for HS256).
+    secret: ${JWT_SECRET:dev-only-change-me-dotnanny-super-secret-signing-key-0123456789}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 management:
   endpoints:

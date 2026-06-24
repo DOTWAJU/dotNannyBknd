@@ -21,6 +21,7 @@ import com.dotnanny.repository.WardProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -42,13 +43,16 @@ public class DataSeeder implements CommandLineRunner {
     private final WardProfileRepository wards;
     private final ProviderComplianceRepository compliance;
     private final IncidentRepository incidents;
+    private final PasswordEncoder encoder;
 
     public DataSeeder(UserRepository users, WardProfileRepository wards,
-                      ProviderComplianceRepository compliance, IncidentRepository incidents) {
+                      ProviderComplianceRepository compliance, IncidentRepository incidents,
+                      PasswordEncoder encoder) {
         this.users = users;
         this.wards = wards;
         this.compliance = compliance;
         this.incidents = incidents;
+        this.encoder = encoder;
     }
 
     @Override
@@ -64,18 +68,18 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
+    // Idempotently ensure the demo accounts exist with hashed passwords.
     private void seedUsers() {
-        if (users.count() > 0) {
-            return;
-        }
-        users.save(user("Sarah Johnson", DEMO_GUARDIAN_ID, "ward123", Role.GUARDIAN));
-        users.save(user("Sarah Johnson", DEMO_NANNY_ID, "nanny123", Role.NANNY));
-        users.save(user("Admin User", "admin@dot-nanny.com", "admin123", Role.ADMIN));
+        ensureUser("Sarah Johnson", DEMO_GUARDIAN_ID, "ward123", Role.GUARDIAN);
+        ensureUser("Sarah Johnson", DEMO_NANNY_ID, "nanny123", Role.NANNY);
+        ensureUser("Admin User", "admin@dot-nanny.com", "admin123", Role.ADMIN);
     }
 
-    private User user(String name, String email, String password, Role role) {
-        return User.builder().fullName(name).email(email).password(password).role(role)
-                .createdAt(Instant.now()).build();
+    private void ensureUser(String name, String email, String rawPassword, Role role) {
+        users.findByEmailIgnoreCase(email).ifPresent(users::delete);
+        users.save(User.builder().fullName(name).email(email)
+                .password(encoder.encode(rawPassword)).role(role)
+                .createdAt(Instant.now()).build());
     }
 
     private void seedWards() {
